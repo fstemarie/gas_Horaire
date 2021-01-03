@@ -10,7 +10,7 @@ function fillCalendars() {
 	let regRange, regData, filter, row, cal, event, limit;
 	let employee, eventName, eventStart, eventEnd;
 
-	Logger.log('registryId: ' + registryId);
+	Logger.log('-- fillCalendars()');
 	regRange = SpreadsheetApp.open(DriveApp.getFileById(registryId)).getDataRange();
 	regRange.offset(1, 0);
 	regData = regRange.getValues();

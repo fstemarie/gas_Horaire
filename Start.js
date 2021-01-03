@@ -1,6 +1,6 @@
 function prepareSheets_tt() {
 	Logger.clear();
-	Logger.log('prepareSheets_tt');
+	Logger.log('-- prepareSheets_tt()');
 
 	prepare();
 	prepareSheets();
@@ -9,7 +9,7 @@ function prepareSheets_tt() {
 
 function fillCalendars_tt() {
 	Logger.clear();
-	Logger.log('fillCalendars_tt');
+	Logger.log('-- fillCalendars_tt()');
 
 	prepare();
 	fillCalendars();

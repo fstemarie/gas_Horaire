@@ -1,14 +1,15 @@
-const
-    LBLUNPROCESSED = 'Horaire',
+const LBLUNPROCESSED = 'Horaire',
     LBLPROCESSED = 'Processed',
     FOLDERID = '1_oCEevGAQsho4RledOZHsH5OuPj7eDsz',
     REGISTRYID = '1P9iSRig6zK6OwePOBRaAhm_5vNu2PyT4S-gZn5hQjes',
-    MOMENTJS = 'https://momentjs.com/downloads/moment.min.js',
+    MOMENTURL = 'https://momentjs.com/downloads/moment.min.js'
 
-var
-    lblUnprocessed, lblProcessed, momentUrl, folderId, registryId
+var cache, lblUnprocessed, lblProcessed, registryId,
+	rootFolderId, unprocFolderId, procFolderId
+	
 
 function install() {
+	Logger.log('-- install()')
     ScriptApp.newTrigger('prepareSheets_tt').timeBased()
         .atHour(17).everyDays(1).create();
     ScriptApp.newTrigger('fillCalendars_tt').timeBased()
@@ -24,13 +25,16 @@ function install() {
 }
 
 function unInstall() {
+	Logger.log('-- unInstall()')
     ScriptApp.getProjectTriggers().forEach((trigger) => {
         ScriptApp.deleteTrigger(trigger);
     });
 }
 
 function prepare() {
-    lblUnprocessed = PropertiesService.getScriptProperties()
+	Logger.log('-- prepare()')
+	cache = CacheService.getUserCache()
+	lblUnprocessed = PropertiesService.getScriptProperties()
         .getProperty('lblUnprocessed');
     if (lblUnprocessed == null) {
         PropertiesService.getScriptProperties()
@@ -46,20 +50,19 @@ function prepare() {
         lblProcessed = LBLPROCESSED;
     }
 
-    // momentJS = PropertiesService.getScriptProperties().getProperty('momentJS');
-    // if (momentJS == null) {
-    //   momentJS = 'https://momentjs.com/downloads/moment.min.js'
-    //   PropertiesService.getScriptProperties().setProperty('momentJS', momentJS);
-    // }
-    momentUrl = MOMENTJS
-    eval(UrlFetchApp.fetch(momentUrl).getContentText());
+    let momentJS = cache.get('momentJS')
+    if (momentJS == null) {
+		momentJS = UrlFetchApp.fetch(momentJS).getContentText()
+		cache.put('momentJS', momentJS, 7200)
+	}
+	eval(momentJS);
     moment.defaultFormat = "YYYY/MM/DD h:mm A";
 
-    folderId = PropertiesService.getScriptProperties().getProperty('folderId');
-    if (folderId == null) {
-        folderId = DriveApp.createFolder('Horaire').getId();
+    rootFolderId = PropertiesService.getScriptProperties().getProperty('folderId');
+    if (rootFolderId == null) {
+        rootFolderId = DriveApp.createFolder('Horaire').getId();
         PropertiesService.getScriptProperties()
-            .setProperty('folderId', folderId);
+            .setProperty('folderId', rootFolderId);
     }
 
     // Prepare the registry
@@ -85,7 +88,7 @@ function prepare() {
 function createRegistry() {
     var registry, sheet;
 
-    Logger.log('Create Registry');
+    Logger.log('-- createRegistry()');
     registry = SpreadsheetApp.create('Horaire registre');
     sheet = registry.getSheets()[0];
     sheet.setName('Moi');
@@ -102,14 +105,14 @@ function createRegistry() {
         .setHorizontalAlignment('center').setBorder(null, null, true,
             null, null, null);
     sheet.setFrozenRows(1);
-
     return registry.getId();
 }
 
 function getCalendar(name) {
     var cals = CalendarApp.getCalendarsByName(name), cal;
 
-    if (cals.length == 0) {
+	Logger.log('-- getCalendar()')
+	if (cals.length == 0) {
         // Le calendrier n'existe pas, donc on le cree
         cal = CalendarApp.createCalendar(name);
         // On set la timezone a PST
@@ -119,6 +122,5 @@ function getCalendar(name) {
     else {
         cal = cals[0];
     }
-
     return cal;
 }

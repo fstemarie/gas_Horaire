@@ -8,19 +8,14 @@ function prepareSheets() {
 	let attachments = new Array();
 	let messages = new Array();
 
-	Logger.clear();
-	Logger.log('prepareSheets()');
-
-	eval(UrlFetchApp.fetch(momentJS).getContentText());
-	moment.defaultFormat = "YYYY/MM/DD h:mm A";
-
+	Logger.log('-- prepareSheets()');
 	// Process Threads
-	Logger.log('Process Threads');
 	// Gets all threads that haven't been processed already
-	threads = GmailApp.getUserLabelByName(mailLabel).getThreads().filter((th) => {
+	Logger.log('Process Threads');
+	threads = GmailApp.getUserLabelByName(lblUnprocessed).getThreads().filter((th) => {
 		let labels = th.getLabels().map((lbl) => lbl.getName());
 		for (let lbl of labels) {
-			if (lbl == mailLabel_Processed) return false;
+			if (lbl == lblProcessed) return false;
 		}
 		return true;
 	});
@@ -48,22 +43,21 @@ function prepareSheets() {
 function processMessage(message) {
 	let attachments = new Array();
 
-	Logger.log('processMessage()');
-	//  if (message.isStarred())
+	Logger.log('-- processMessage()');
 	for (let attachment of message.getAttachments()) {
 		if (attachment.getName().slice(-5) === '.xlsx') {
 			attachments.push(attachment);
 		}
 	}
 	message.unstar().markRead();
-	message.getThread().addLabel(GmailApp.getUserLabelByName(mailLabel_Processed));
+	message.getThread().addLabel(GmailApp.getUserLabelByName(lblProcessed));
 	return attachments;
 }
 
 function processAttachment(attachment) {
 	let fileId, spreadsheet, resources;
 
-	Logger.log('processAttachment()');
+	Logger.log('-- processAttachment()');
 	resources = {
 		title: attachment.getName().replace(/.xlsx?/, ""),
 		parents: [{ id: folderId }]
