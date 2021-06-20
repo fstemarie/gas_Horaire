@@ -3,7 +3,7 @@ function test_234() {
   preparePhase1()
   let tests = prepareSheets()
   let testsJSON = JSON.stringify(tests)
-  cache.put('tests', testsJSON, 7200)
+  CacheService.getUserCache().put('tests', testsJSON, 7200)
 }
 
 function prepareSheets() {
@@ -38,10 +38,10 @@ function processMessage(message) {
   for (let attachment of message.getAttachments()) {
     let result = {}
     if (attachment.getName().slice(-5) === '.xlsx') {
-      result['msgDate'] = moment(message.getDate())
+      result['msgDate'] = moment(message.getDate()).format()
       result['msgId'] = message.getId()
+      result['threadId'] = message.getThread().getId()
       result['fileId'] = processAttachment(attachment)
-      Logger.log('Result : ' + result)
       results.push(result)
     }
   }
@@ -51,14 +51,12 @@ function processMessage(message) {
 
 function processAttachment(attachment) {
   Logger.log('-- processAttachment()')
-  let fileId, resources, unprocFolder
-  unprocFolder = DriveApp.getFolderById(unprocFolderId)
-  resources = {
+  let resources = {
     title: attachment.getName().replace(/.xlsx?/, ""),
-    parents: [{ id: unprocFolderId }]
+    parents: [{ id: unprocFolder.getId() }]
   }
   // Creates new Google Sheet from transforming original excel file
-  fileId = Drive.Files.insert(resources, attachment.copyBlob(),
+  let fileId = Drive.Files.insert(resources, attachment.copyBlob(),
     { convert: true }).id
   // Logger.log('File written and converted :' + fileId)
   // DriveApp.getFileById(fileId).setStarred(true)

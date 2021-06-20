@@ -1,24 +1,24 @@
 function test_876() {
   Logger.clear()
   preparePhase1()
-  let testsJSON = cache.get('tests')
+  let testsJSON = CacheService.getUserCache().get('tests')
   let tests = JSON.parse(testsJSON)
   processSheets(tests)
 }
 
 function processSheets(msgInfos) {
   Logger.log('-- processSheets()')
-  let filteredRegData, regData = []
-  let procFolder = DriveApp.getFolderById(procFolderId)
+  Logger.log(msgInfos)
   for (let msgInfo of msgInfos) {
-    const { msgDate, fileId } = msgInfo
+    let filteredRegData, regData = []
+    let { msgDate, fileId } = msgInfo
+    msgDate = moment(msgDate)
     const file = DriveApp.getFileById(fileId)
     const sheet = SpreadsheetApp.open(file).getSheets()[0]
     // ... ouvre la spreadsheet et ajoute les infos dans regData
     regData = regData.concat(processSheet(sheet, msgDate))
     file.moveTo(procFolder)
     // Va ajouter les donnees dans le registre
-    Logger.log('Ajoute les donnees au registre pour Ste-Marie, François')
     filteredRegData = regData.filter((r) => {
       return r[0] == 'Ste-Marie, François'
     })
@@ -28,6 +28,7 @@ function processSheets(msgInfos) {
       return r[0] != 'Ste-Marie, François'
     })
     addToRegistry(filteredRegData, 'Collegues')
+    
   }
 }
 
@@ -35,106 +36,119 @@ function processSheet(sheet, msgDate) {
   Logger.log('-- processSheet()')
   /*	Dans cette section, on transforme les rangees
     de date dans un format utilisable. */
-
   let regData = [], dates
   let schedule = sheet.getDataRange().getDisplayValues()
   // Pour chaque employe (ou dates)...
-  for (let row = 0; row < schedule.length; row++) {
-    let employee
-    if (schedule[row][1].length == 0) {
+  for (let iRow = 0; iRow < schedule.length; iRow++) {
+    let employee, row = schedule[iRow]
+    if (row[1].length == 0) {
       Logger.log('Skipped empty row')
       continue
     }
-    else if (schedule[row][0].length == 0) {
+    else if (row[0].length == 0) {
       // ------------- La rangee se trouve a etre les dates de la semaine
-      schedule[row].shift() // On enleve la cellule vide du debut
-      // On garde en memoire les dates transformees en momentJS
-      dates = fixDates(schedule[row], msgDate)
+      row.shift() // On enleve la cellule vide du debut
+      // On garde en memoire les dates transformees en Moment
+      dates = fixDates(row, msgDate)
     }
     else {
-      // if (scheduleData[row][0] != 'Ste-Marie, François') continue
       // ------------- La rangee se trouve a etre la cedule d'un employe
-      employee = schedule[row].shift()
-      Logger.log(employee)
-
+      employee = row.shift()
+      Logger.log("Employee: " + employee)
       // Pour chaque journee de la semaine...
-      for (let col = 0; col < schedule[row].length; col++) {
-        let start, end, lunch, workStart, workEnd,
-          lunchStart, lunchEnd, workDay = schedule[row][col]
-
+      for (let iCol = 0; iCol < row.length; iCol++) {
+        let start, end, lunch, workStart, workEnd, wuid, summary,
+          lunchStart, lunchEnd, workDay = row[iCol]
         // Si la cellule est vide, on saute
         if (workDay.length == 0) continue
         // Si la cellule est mal formattee, on saute
         if (/[a-z]/i.test(workDay[0])) continue
         // Debarrasse du texte inutile
         workDay = workDay.replace(' PST', '')
-        workDay = workDay.replace(/\s*NO LUNCH.*/, '')
+        workDay = workDay.replace(/NO LUNCH/, '')
         workDay = workDay.replace(' - ', '|')
-        workDay = workDay.replace(/\s*LUNCH : /, '|')
+        workDay = workDay.replace(/LUNCH :/, '|')
+        workDay = workDay.replace(/\s*/g, '')
+        workDay = workDay.replace(/\|$/, '')
         // De cette facon, on se retrouve avec 3 tokens
         ;[start, end, lunch] = workDay.split('|')
+
         //----------------------- Work ---------------------------------
-        workStart = dates[col].format('YYYY-MM-DD ')
+        workStart = dates[iCol].format('YYYY-MM-DD ') + start
         switch (start.length) {
-          case 4: case 5:
-            workStart = moment(workStart + start, 'YYYY-MM-DD hh A')
+          case 3: case 4:
+            workStart = moment(workStart, 'YYYY-MM-DD hhA').utc()
             break
 
-          case 7: case 8:
-            workStart = moment(workStart + start, 'YYYY-MM-DD hh:mm A')
+          case 6: case 7:
+            workStart = moment(workStart, 'YYYY-MM-DD hh:mmA').utc()
             break
         }
-        if (!workStart.isValid()) {
-          Logger.log('Invalid Date - row=' + row +
-            '; col=' + col + '; emp=' + employee)
-        }
-        workEnd = dates[col].format('YYYY-MM-DD ')
-        switch (end.length) {
-          case 4: case 5:
-            workEnd = moment(workEnd + end, 'YYYY-MM-DD hh A')
-            break
-
-          case 7: case 8:
-            workEnd = moment(workEnd + end, 'YYYY-MM-DD hh:mm A')
-            break
-        }
-        if (workEnd.isBefore(workStart)) workEnd.add(1, 'day')
-        if (!workEnd.isValid()) {
-          Logger.log('Invalid Date - row=' + row +
-            '; col=' + col + '; emp=' + employee)
-        }
-        if (!(workStart.isValid() && workEnd.isValid())) {
-          regData.push([employee, 'Travail', wuid, 'Invalide',
-            'Invalide', 0])
+        if (workStart.isValid()) {
+          Logger.log("workStart is Valid: " + workStart.format())
+          wuid = 'w/' + workStart.format('X') + '/' + slugify(employee)
         }
         else {
-          let wuid = 'w/' + workStart.format('X') + '/geeksquad.ca'
-          regData.push([employee, 'Travail', wuid, workStart.format(),
-            workEnd.format(), 0])
+          Logger.log('Invalid Date - row=' + iRow +
+            '; col=' + iCol + '; emp=' + employee)
         }
+
+        workEnd = dates[iCol].format('YYYY-MM-DD ') + end
+        switch (end.length) {
+          case 3: case 4:
+            workEnd = moment(workEnd, 'YYYY-MM-DD hhA').utc()
+            break
+
+          case 6: case 7:
+            workEnd = moment(workEnd, 'YYYY-MM-DD hh:mmA').utc()
+            break
+
+        }
+        if (workEnd.isValid()) {
+          Logger.log("workEnd is Valid: " + workEnd.format())
+          if (workEnd.isBefore(workStart)) workEnd = workEnd.add(1, 'day')
+        }
+        else {
+          Logger.log('Invalid Date - row=' + iRow +
+            '; col=' + iCol + '; emp=' + employee)
+        }
+
+        summary = '<> Travail'
+        if (employee != 'Ste-Marie, François') {
+          summary = employee + ' ' + summary
+        }
+        regData.push([employee, summary, wuid, workStart.format(),
+          workEnd.format(), 0])
+
         //---------------------- Lunch ---------------------------------
-        // if (lunch.length > 0 && employee == 'Ste-Marie, François') {
         if (typeof lunch != 'undefined') {
-          lunchStart = dates[col].format('YYYY-MM-DD ')
+          lunchStart = dates[iCol].format('YYYY-MM-DD ') + lunch
+          Logger.log("lunch: '" + lunchStart + "'")
           switch (lunch.length) {
-            case 4: case 5:
-              lunchStart = moment(lunchStart + lunch, 'YYYY-MM-DD hh A')
+            case 3: case 4:
+              lunchStart = moment(lunchStart, 'YYYY-MM-DD hhA').utc()
               break
 
-            case 7: case 8:
-              lunchStart = moment(lunchStart + lunch, 'YYYY-MM-DD hh:mm A')
+            case 6: case 7:
+              lunchStart = moment(lunchStart, 'YYYY-MM-DD hh:mmA').utc()
               break
-          }
-          if (lunchStart.isBefore(workStart)) lunchStart.add(1, 'day')
-          lunchEnd = lunchStart.clone().add(30, 'minutes')
-          if (!lunchStart.isValid()) {
-            Logger.log('Invalid Date - row=' + row +
-              '; col=' + col + '; emp=' + employee)
+            }
+          if (lunchStart.isValid()) {
+            Logger.log("lunchStart is Valid: " + lunchStart.format())
+            if (lunchStart.isBefore(workStart)) lunchStart.add(1, 'day')
+            lunchEnd = lunchStart.clone().add(30, 'minutes')
+
+            let luid = 'l/' + lunchStart.format('X') + '/' + slugify(employee)
+            let summary = '-- Lunch'
+            if (employee != 'Ste-Marie, François') {
+              summary = employee + ' ' + summary
+            }
+            regData.push([employee, summary, luid, lunchStart.format(),
+              lunchEnd.format(), 0])
           }
           else {
-            let luid = 'l/' + lunchStart.format('X') + '/geeksquad.ca'
-            regData.push([employee, 'Lunch', luid, lunchStart.format(),
-              lunchEnd.format(), 0])
+            Logger.log('Invalid Date - row=' + iRow +
+              '; col=' + iCol + '; emp=' + employee)
           }
         }
       }
@@ -145,22 +159,22 @@ function processSheet(sheet, msgDate) {
 
 function addToRegistry(regData, sheetName) {
   Logger.log('-- addToRegistry()')
-  if (regData.length >= 1) {
-    let sheet = SpreadsheetApp.openById(registryId).getSheetByName(sheetName)
+  if (regData.length > 0) {
+    let sheet = registry.getSheetByName(sheetName)
     let range = sheet.getRange(sheet.getLastRow() + 1, 1, regData.length, 6)
     range.setValues(regData)
+    sheet.sort(4)
   }
 }
 
 function fixDates(brokenDates, msgDate) {
   Logger.log('-- fixDates()')
   dates = brokenDates.map((d) => {
-    d = moment(d, 'ddd, MMM D')
-    d.year(msgDate.year)
+    d = moment(d, 'ddd, MMM D').year(msgDate.year())
     if (d < msgDate) {
       d.add(1, 'year')
     }
     return d
-  }) // On garde en memoire les dates transformees en momentJS
+  })
   return dates
 }

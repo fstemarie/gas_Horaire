@@ -1,66 +1,53 @@
-function preparePhase1() {
-  props = PropertiesService.getScriptProperties()
-  cache = CacheService.getUserCache()
-  prepareMoment()
+
+function prepare() {
+  moment.tz.setDefault('America/Vancouver');
   prepareFolders()
-  createRegistry()
-}
-
-function preparePhase2() {
-  props = PropertiesService.getScriptProperties()
-  cache = CacheService.getUserCache()
-  prepareMoment()
+  prepareRegistry()
   prepareCalendars()
-  fillCalendars()
-}
-
-function prepareMoment() {
-  Logger.log('-- prepareMoment()')
-  let momentJS = cache.get('momentJS')
-  if (momentJS == null) {
-    momentJS = UrlFetchApp.fetch(MOMENTURL).getContentText()
-    cache.put('momentJS', momentJS, 7200)
-  }
-  eval(momentJS)
-  moment.defaultFormat = "YYYY-MM-DD HH:mm"
 }
 
 function prepareFolders() {
   Logger.log('-- prepareFolders()')
-  unprocFolderId = props.getProperty('unprocFolderId')
-  if (unprocFolderId == null) {
-    unprocFolderId = DriveApp.createFolder(FOLDER_UNPROCESSED).getId()
-    props.setProperty('unprocFolderId', unprocFolderId)
+  let folders = DriveApp.getFoldersByName(FOLDER_ROOT)
+  if (folders.hasNext()) {
+    rootFolder = folders.next()
   }
-  procFolderId = props.getProperty('procFolderId')
-  if (procFolderId == null) {
-    procFolderId = DriveApp.createFolder(FOLDER_PROCESSED).getId()
-    props.setProperty('procFolderId', procFolderId)
+  else {
+    rootFolder = DriveApp.createFolder(FOLDER_ROOT)
+  }
+
+  folders = rootFolder.getFoldersByName(FOLDER_PROCESSED)
+  if (folders.hasNext()) {
+    procFolder = folders.next()
+  }
+  else {
+    procFolder = rootFolder.createFolder(FOLDER_PROCESSED)
+  }
+
+  folders = rootFolder.getFoldersByName(FOLDER_UNPROCESSED)
+  if (folders.hasNext()) {
+    unprocFolder = folders.next()
+  }
+  else {
+    unprocFolder = rootFolder.createFolder(FOLDER_UNPROCESSED)
   }
 }
 
 function prepareRegistry() {
   Logger.log('-- prepareRegistry()')
-  registryId = props.getProperty('registryId')
-  if (registryId == null) {
-    registryId = createRegistry()
-    props.setProperty('registryId', registryId)
+  let files = rootFolder.getFilesByName(REGISTRYNAME)
+  if (files.hasNext()){
+    registry = SpreadsheetApp.open(files.next())
   }
   else {
-    try {
-      let registry = DriveApp.getFileById(registryId)
-      Logger.log(registry.getName())
-    }
-    catch (err) {
-      registryId = createRegistry()
-      props.setProperty('registryId', registryId)
-    }
+    registry = createRegistry()
   }
+
   function createRegistry() {
     Logger.log('-- createRegistry()')
-    let registry, sheet
-    registry = SpreadsheetApp.create(REGISTRYNAME)
-    sheet = registry.getSheets()[0]
+    let spreadsheet = SpreadsheetApp.create(REGISTRYNAME)
+    DriveApp.getFileById(spreadsheet.getId()).moveTo(rootFolder)
+    let sheet = spreadsheet.getSheets()[0]
     sheet.setName('Moi')
     sheet.appendRow(['Employé', 'Évenement', 'Id', 'Date début',
       'Date fin', 'Traité'])
@@ -68,14 +55,14 @@ function prepareRegistry() {
       .setHorizontalAlignment('center').setBorder(null, null, true,
         null, null, null)
     sheet.setFrozenRows(1)
-    sheet = registry.insertSheet('Collegues')
+    sheet = spreadsheet.insertSheet('Collegues')
     sheet.appendRow(['Employé', 'Évenement', 'Id', 'Date début',
       'Date fin', 'Traité'])
     sheet.getRange('A1:F1').setFontSize(14).setFontWeight('bold')
       .setHorizontalAlignment('center').setBorder(null, null, true,
         null, null, null)
     sheet.setFrozenRows(1)
-    return registry.getId()
+    return spreadsheet
   }  
 }
 
@@ -84,13 +71,15 @@ function prepareCalendars() {
   myCal = CalendarApp.getOwnedCalendarsByName(MYCALNAME)[0]
   if (myCal == null) {
     myCal = CalendarApp.createCalendar(MYCALNAME)
-    myCal.setTimeZone('America/Vancouver')
-    Utilities.sleep(500)
+    myCal.setColor(CalendarApp.Color.PURPLE)
+    // myCal.setTimeZone('America/Vancouver')
+    Utilities.sleep(250)
   }
   matesCal = CalendarApp.getOwnedCalendarsByName(MATESCALNAME)[0]
   if (matesCal == null) {
-    matesCal = CalendarApp.createCalendar(MYCALNAME)
-    matesCal.setTimeZone('America/Vancouver')
-    Utilities.sleep(500)
+    matesCal = CalendarApp.createCalendar(MATESCALNAME)
+    // matesCal.setColor(CalendarApp.Color.PURPLE)
+    // matesCal.setTimeZone('America/Vancouver')
+    Utilities.sleep(250)
   }
 }
