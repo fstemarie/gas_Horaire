@@ -1,13 +1,12 @@
-
 function prepare() {
-  moment.tz.setDefault('America/Vancouver');
+  moment.tz.setDefault("America/Vancouver");
   prepareFolders()
   prepareRegistry()
   prepareCalendars()
 }
 
 function prepareFolders() {
-  Logger.log('-- prepareFolders()')
+  Logger.log("-- prepareFolders()")
   let folders = DriveApp.getFoldersByName(FOLDER_ROOT)
   if (folders.hasNext()) {
     rootFolder = folders.next()
@@ -34,7 +33,7 @@ function prepareFolders() {
 }
 
 function prepareRegistry() {
-  Logger.log('-- prepareRegistry()')
+  Logger.log("-- prepareRegistry()")
   let files = rootFolder.getFilesByName(REGISTRYNAME)
   if (files.hasNext()){
     registry = SpreadsheetApp.open(files.next())
@@ -44,42 +43,39 @@ function prepareRegistry() {
   }
 
   function createRegistry() {
-    Logger.log('-- createRegistry()')
+    Logger.log("-- createRegistry()")
     let spreadsheet = SpreadsheetApp.create(REGISTRYNAME)
     DriveApp.getFileById(spreadsheet.getId()).moveTo(rootFolder)
     let sheet = spreadsheet.getSheets()[0]
-    sheet.setName('Moi')
-    sheet.appendRow(['Employé', 'Évenement', 'Id', 'Date début',
-      'Date fin', 'Traité'])
-    sheet.getRange('A1:F1').setFontSize(14).setFontWeight('bold')
-      .setHorizontalAlignment('center').setBorder(null, null, true,
+    sheet.setName("Moi")
+    sheet.appendRow(["Employé", "Évenement", "Id", "Date début",
+      "Date fin", "Traité"])
+    sheet.getRange("A1:F1").setFontSize(14).setFontWeight("bold")
+      .setHorizontalAlignment("center").setBorder(null, null, true,
         null, null, null)
     sheet.setFrozenRows(1)
-    sheet = spreadsheet.insertSheet('Collegues')
-    sheet.appendRow(['Employé', 'Évenement', 'Id', 'Date début',
-      'Date fin', 'Traité'])
-    sheet.getRange('A1:F1').setFontSize(14).setFontWeight('bold')
-      .setHorizontalAlignment('center').setBorder(null, null, true,
+    sheet = spreadsheet.insertSheet("Collegues")
+    sheet.appendRow(["Employé", "Évenement", "Id", "Date début",
+      "Date fin", "Traité"])
+    sheet.getRange("A1:F1").setFontSize(14).setFontWeight("bold")
+      .setHorizontalAlignment("center").setBorder(null, null, true,
         null, null, null)
     sheet.setFrozenRows(1)
     return spreadsheet
-  }  
+  }
 }
 
 function prepareCalendars() {
-  Logger.log('-- prepareCalendars()')
+  Logger.log("-- prepareCalendars()")
   myCal = CalendarApp.getOwnedCalendarsByName(MYCALNAME)[0]
   if (myCal == null) {
     myCal = CalendarApp.createCalendar(MYCALNAME)
     myCal.setColor(CalendarApp.Color.PURPLE)
-    // myCal.setTimeZone('America/Vancouver')
     Utilities.sleep(250)
   }
   matesCal = CalendarApp.getOwnedCalendarsByName(MATESCALNAME)[0]
   if (matesCal == null) {
     matesCal = CalendarApp.createCalendar(MATESCALNAME)
-    // matesCal.setColor(CalendarApp.Color.PURPLE)
-    // matesCal.setTimeZone('America/Vancouver')
     Utilities.sleep(250)
   }
 }
