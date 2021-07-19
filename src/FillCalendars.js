@@ -22,11 +22,6 @@ function fillCalendar(cal, sheetName) {
       Logger.log("Rangee vide. On la saute")
       continue // Si rangee vide, on le saute
     }
-    if (row_i % 20 == 0) {
-      regRange.setValues(regData)
-      Logger.log("Mise a jour du registre...")
-      // Utilities.sleep(1000) // Prend une pause
-    }
     [employee, eventName, eventId, eventStart, eventEnd,] = row
     eventStart = moment(eventStart).toDate()
     eventEnd = moment(eventEnd).toDate()
@@ -57,6 +52,8 @@ function fillCalendar(cal, sheetName) {
         break
     }
     row[5] = 1 // Signale comme quoi il a ete traite dans le registre
+    Logger.log("Mise a jour du registre...")
+    regRange.setValues(regData)
     Logger.log("Pause 500ms...")
     Utilities.sleep(500)
   }
