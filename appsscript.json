@@ -1,5 +1,5 @@
 {
-  "timeZone": "America/New_York",
+  "timeZone": "America/Vancouver",
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "executionApi": {
@@ -16,14 +16,6 @@
         "userSymbol": "Calendar",
         "serviceId": "calendar",
         "version": "v3"
-      }
-    ],
-    "libraries": [
-      {
-        "userSymbol": "Momentjs",
-        "version": "0",
-        "libraryId": "1Vz4hRDnK5AoSy4W9ZGpFJLCV1IgtEEA-1b1YEkYJLSNoj-JdrcCSmoIE",
-        "developmentMode": true
       }
     ]
   },
