@@ -1,7 +1,7 @@
 function updateCalendars_tt() {
   globalThis.startTs = moment()
   Logger.clear()
-  Logger.log("-- prepareSheets_tt() " + startTs)
+  Logger.log("-- updateCalendars_tt() " + startTs)
   let msgInfos = prepareSheets()
   processSheets(msgInfos)
   fillCalendars()
