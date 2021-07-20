@@ -1,6 +1,10 @@
 function fillCalendars() {
   Logger.log("-- fillCalendars()")
   for (const sheet of registry.getSheets()) {
+    if (moment().diff(startTs, "seconds") >= 350) {
+      Logger.log("End of allotted time reached. Exiting...")
+      break
+    }
     let sheetName = sheet.getName()
     if (sheetName === "TEMPLATE") continue
     let cal = CalendarApp.getCalendarsByName(sheetName)[0]
