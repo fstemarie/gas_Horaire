@@ -2,25 +2,16 @@ function processSheets(msgInfos) {
   Logger.log("-- processSheets()")
   Logger.log(msgInfos)
   for (let msgInfo of msgInfos) {
-    let filteredRegData, regData = []
+    let regEvents = []
     let { msgDate, fileId } = msgInfo
     msgDate = moment(msgDate)
     const file = DriveApp.getFileById(fileId)
     const sheet = SpreadsheetApp.open(file).getSheets()[0]
     // ... ouvre la spreadsheet et ajoute les infos dans regData
-    regData = regData.concat(processSheet(sheet, msgDate))
+    regEvents = regEvents.concat(processSheet(sheet, msgDate))
     file.moveTo(procFolder)
     // Va ajouter les donnees dans le registre
-    filteredRegData = regData.filter((r) => {
-      return r[0] == "Ste-Marie, François"
-    })
-    addToRegistry(filteredRegData, "Moi")
-
-    filteredRegData = regData.filter((r) => {
-      return r[0] != "Ste-Marie, François"
-    })
-    addToRegistry(filteredRegData, "Collegues")
-
+    addEventsToRegistry(regEvents)
   }
 }
 
@@ -28,7 +19,7 @@ function processSheet(sheet, msgDate) {
   Logger.log("-- processSheet()")
   // Dans cette section, on transforme les rangees
   // de date dans un format utilisable.
-  let regData = [], dates
+  let regEvents = [], dates
   let schedule = sheet.getDataRange().getDisplayValues()
   // Pour chaque employe (ou dates)...
   for (let iRow = 0; iRow < schedule.length; iRow++) {
@@ -109,11 +100,8 @@ function processSheet(sheet, msgDate) {
             "; col=" + iCol + "; emp=" + employee)
         }
 
-        summary = "<> Travail"
-        if (employee != "Ste-Marie, François") {
-          summary = employee + " " + summary
-        }
-        regData.push([employee, summary, wuid, workStart.format(),
+        summary = " <> " + employee
+        regEvents.push([employee, summary, wuid, workStart.format(),
           workEnd.format(), 0])
 
         //---------------------- Lunch ---------------------------------
@@ -137,11 +125,8 @@ function processSheet(sheet, msgDate) {
             lunchEnd = lunchStart.clone().add(30, "minutes")
 
             let luid = "l/" + lunchStart.format("X") + "/" + slugify(employee)
-            let summary = "-- Lunch"
-            if (employee != "Ste-Marie, François") {
-              summary = employee + " " + summary
-            }
-            regData.push([employee, summary, luid, lunchStart.format(),
+            let summary = " -- " + employee
+            regEvents.push([employee, summary, luid, lunchStart.format(),
               lunchEnd.format(), 0])
           }
           else {
@@ -152,15 +137,36 @@ function processSheet(sheet, msgDate) {
       }
     }
   }
-  return regData
+  return regEvents
 }
 
-function addToRegistry(regData, sheetName) {
-  Logger.log("-- addToRegistry()")
-  if (regData.length > 0) {
-    let sheet = registry.getSheetByName(sheetName)
-    let range = sheet.getRange(sheet.getLastRow() + 1, 1, regData.length, 6)
-    range.setValues(regData)
+// Create an object where each property is an employee (slug) which contains
+// an Array with its events
+function separateEventsByEmp(regEvents) {
+  Logger.log("-- separateEventsByEmp()")
+  const regEventsByEmp = {}
+  regEvents.forEach(row => {
+    const employeeSlug = slugify(row[0])
+    if (!regEventsByEmp[employeeSlug]) regEventsByEmp[employeeSlug] = []
+    regEventsByEmp[employeeSlug].push(row)
+  });
+  return regEventsByEmp
+}
+
+function addEventsToRegistry(regEvents) {
+  Logger.log("-- addEventsToRegistry()")
+  if (regEvents.length == 0) return
+  let regEventsByEmp = separateEventsByEmp(regEvents)
+  for (const employee in regEventsByEmp) {
+    let sheet = registry.getSheetByName(employee)
+    if (!sheet) {
+      let template = registry.getSheetByName("TEMPLATE")
+      sheet = registry.insertSheet(employeeSlug,
+        Option={"template": template})
+    }
+    const events = regEventsByEmp[employee]
+    const range = sheet.getRange(sheet.getLastRow() + 1, 1, events.length, 6)
+    range.setValues(events)
     sheet.sort(4)
   }
 }

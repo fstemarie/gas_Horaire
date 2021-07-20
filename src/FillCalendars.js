@@ -1,18 +1,22 @@
 function fillCalendars() {
   Logger.log("-- fillCalendars()")
-  fillCalendar(myCal, "Moi")
-  fillCalendar(matesCal, "Collegues")
+  for (const sheet of registry.getSheets()) {
+    let sheetName = sheet.getName()
+    if (sheetName === "TEMPLATE") continue
+    let cal = CalendarApp.getCalendarsByName(sheetName)[0]
+    if (!cal) cal = CalendarApp.createCalendar(sheetName)
+    fillCalendar(cal, sheet.sort(4))
+  }
 }
 
-function fillCalendar(cal, sheetName) {
+function fillCalendar(cal, sheet) {
   Logger.log("-- fillCalendar()")
-  let regRange, regData, event
-  let employee, eventName, eventStart, eventEnd, eventId
-  regRange = registry.getSheetByName(sheetName).sort(4)
-  regRange = regRange.getDataRange().offset(1, 0)
-  regData = regRange.getValues()
-  for (let row_i = 0; row_i < regData.length; row_i++) {
-    const row = regData[row_i]
+  let regRange, regEvents, event, employee
+  let eventName, eventStart, eventEnd, eventId
+  regRange = sheet.getDataRange().offset(1, 0)
+  regEvents = regRange.getValues()
+  for (let row_i = 0; row_i < regEvents.length; row_i++) {
+    const row = regEvents[row_i]
     if (moment().diff(startTs, "seconds") >= 350) break
     if (row[5] == 1) {
       Logger.log("Rangee deja traitee. On la saute")
@@ -53,9 +57,9 @@ function fillCalendar(cal, sheetName) {
     }
     row[5] = 1 // Signale comme quoi il a ete traite dans le registre
     Logger.log("Mise a jour du registre...")
-    regRange.setValues(regData)
+    regRange.setValues(regEvents)
     Logger.log("Pause 500ms...")
     Utilities.sleep(500)
   }
-  regRange.setValues(regData)
+  regRange.setValues(regEvents)
 }
