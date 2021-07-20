@@ -142,7 +142,7 @@ function processSheet(sheet, msgDate) {
 
 // Create an object where each property is an employee (slug) which contains
 // an Array with its events
-function separateEventsByEmp(regEvents) {
+function separateEventsByEmployees(regEvents) {
   Logger.log("-- separateEventsByEmp()")
   const regEventsByEmp = {}
   regEvents.forEach(row => {
@@ -156,15 +156,15 @@ function separateEventsByEmp(regEvents) {
 function addEventsToRegistry(regEvents) {
   Logger.log("-- addEventsToRegistry()")
   if (regEvents.length == 0) return
-  let regEventsByEmp = separateEventsByEmp(regEvents)
-  for (const employee in regEventsByEmp) {
-    let sheet = registry.getSheetByName(employee)
+  let regEventsByEmp = separateEventsByEmployees(regEvents)
+  for (const employeeSlug in regEventsByEmp) {
+    let sheet = registry.getSheetByName(employeeSlug)
     if (!sheet) {
       let template = registry.getSheetByName("TEMPLATE")
       sheet = registry.insertSheet(employeeSlug,
         Option={"template": template})
     }
-    const events = regEventsByEmp[employee]
+    const events = regEventsByEmp[employeeSlug]
     const range = sheet.getRange(sheet.getLastRow() + 1, 1, events.length, 6)
     range.setValues(events)
     sheet.sort(4)
