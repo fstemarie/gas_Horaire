@@ -7,17 +7,17 @@ function prepareSheets() {
   threads = GmailApp.getUserLabelByName(LABEL_UNPROCESSED).getThreads()
   threads = threads.filter((th) => {
   	let labels = th.getLabels().map((lbl) => lbl.getName())
-  	for (let lbl of labels) {
+  	for (const lbl of labels) {
   		if (lbl == LABEL_PROCESSED) return false
   	}
   	return true
   })
-  for (let thread of threads) {
+  for (const thread of threads) {
     messages = messages.concat(thread.getMessages())
   }
   // Process Messages
   Logger.log("Process Messages")
-  for (let message of messages) {
+  for (const message of messages) {
     Logger.log("Message : " + message.getSubject())
     results = results.concat(processMessage(message))
   }

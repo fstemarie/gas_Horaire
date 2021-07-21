@@ -2,7 +2,6 @@ function fillCalendars() {
   Logger.log("-- fillCalendars()")
   for (const sheet of registry.getSheets()) {
     if (moment().diff(startTs, "seconds") >= 350) {
-      Logger.log("End of allotted time reached. Exiting...")
       break
     }
     let sheetName = sheet.getName()
@@ -20,8 +19,10 @@ function fillCalendar(cal, sheet) {
   regRange = sheet.getDataRange().offset(1, 0)
   regEvents = regRange.getValues()
   for (let row_i = 0; row_i < regEvents.length; row_i++) {
+    if (moment().diff(startTs, "seconds") >= 350) {
+      throw "End of allotted time reached. Exiting..."
+    }
     const row = regEvents[row_i]
-    if (moment().diff(startTs, "seconds") >= 350) break
     if (row[5] == 1) {
       Logger.log("Rangee deja traitee. On la saute")
       continue; // Si deja traite, on le saute.
