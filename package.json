@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fstemarie/Horaire.gas.git"
+    "url": "git+https://github.com/fstemarie/gas_Horaire.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/fstemarie/Horaire.gas/issues"
+    "url": "https://github.com/fstemarie/gas_Horaire/issues"
   },
-  "homepage": "https://github.com/fstemarie/Horaire.gas#readme",
+  "homepage": "https://github.com/fstemarie/gas_Horaire#readme",
   "devDependencies": {
     "@types/google-apps-script": "^1.0.20"
   }
