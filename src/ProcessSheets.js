@@ -32,7 +32,7 @@ function processSheet(sheet, msgDate) {
       // La rangee se trouve a etre les dates de la semaine
       row.shift() // On enleve la cellule vide du debut
       // On garde en memoire les dates transformees en Moment
-      dates = fixDates(row, msgDate)
+      dates = fixIncompleteDates(row, msgDate)
     }
     else {
       // La rangee se trouve a etre la cedule d'un employe
@@ -71,7 +71,6 @@ function processSheet(sheet, msgDate) {
         }
         if (workStart.isValid()) {
           Logger.log("workStart is Valid: " + workStart.format())
-          wuid = "w/" + workStart.format("X") + "/" + slugify(employee)
         }
         else {
           Logger.log("Invalid Date - row=" + iRow +
@@ -100,8 +99,9 @@ function processSheet(sheet, msgDate) {
             "; col=" + iCol + "; emp=" + employee)
         }
 
-        summary = " <> " + employee
-        regEvents.push([employee, summary, wuid, workStart.format(),
+        // wuid = "w/" + workStart.format("X") + "/" + slugify(employee)
+        summary = "<> " + employee
+        regEvents.push([employee, summary, , workStart.format(),
           workEnd.format(), 0])
 
         //---------------------- Lunch ---------------------------------
@@ -124,9 +124,9 @@ function processSheet(sheet, msgDate) {
             if (lunchStart.isBefore(workStart)) lunchStart.add(1, "day")
             lunchEnd = lunchStart.clone().add(30, "minutes")
 
-            let luid = "l/" + lunchStart.format("X") + "/" + slugify(employee)
-            let summary = " -- " + employee
-            regEvents.push([employee, summary, luid, lunchStart.format(),
+            // let luid = "l/" + lunchStart.format("X") + "/" + slugify(employee)
+            let summary = "-- " + employee
+            regEvents.push([employee, summary, , lunchStart.format(),
               lunchEnd.format(), 0])
           }
           else {
@@ -167,13 +167,13 @@ function addEventsToRegistry(regEvents) {
     const events = regEventsByEmp[employeeSlug]
     const range = sheet.getRange(sheet.getLastRow() + 1, 1, events.length, 6)
     range.setValues(events)
-    sheet.sort(4)
+    sheet.sort(4).autoResizeColumns(1, 5)
   }
 }
 
-function fixDates(brokenDates, msgDate) {
+function fixIncompleteDates(incompleteDates, msgDate) {
   Logger.log("-- fixDates()")
-  dates = brokenDates.map((d) => {
+  dates = incompleteDates.map((d) => {
     d = moment(d, "ddd, MMM D").year(msgDate.year())
     if (d < msgDate) {
       d.add(1, "year")
