@@ -37,6 +37,7 @@ function processSheet(sheet, msgDate) {
     else {
       // La rangee se trouve a etre la cedule d'un employe
       employee = row.shift()
+      Logger.log("************************************************************")
       Logger.log("Employee: " + employee)
       // Pour chaque journee de la semaine...
       for (let iCol = 0; iCol < row.length; iCol++) {
@@ -47,17 +48,21 @@ function processSheet(sheet, msgDate) {
         // Si la cellule est mal formattee, on saute
         if (/[a-z]/i.test(workDay[0])) continue
         // Debarrasse du texte inutile
+        Logger.log("workDay before replacements: " + workDay)
+        workDay = workDay.replace(/\r\n/, " ")
         workDay = workDay.replace(" PST", "")
-        workDay = workDay.replace(/NO LUNCH/, "")
+        workDay = workDay.replace(/NO\s*LUNCH/, "")
         workDay = workDay.replace(" - ", "|")
-        workDay = workDay.replace(/LUNCH :/, "|")
+        workDay = workDay.replace(/LUNCH\s*:/, "|")
         workDay = workDay.replace(/\s*/g, "")
         workDay = workDay.replace(/\|$/, "")
+        Logger.log("workDay after replacements: " + workDay)
         // De cette facon, on se retrouve avec 3 tokens
         ;[start, end, lunch] = workDay.split("|")
 
         //----------------------- Work ---------------------------------
         workStart = dates[iCol].format("YYYY-MM-DD ") + start
+        Logger.log("Raw workStart: [" + workStart + "]")
         switch (start.length) {
           case 3: case 4:
             workStart = moment.tz(workStart, "YYYY-MM-DD hhA",
@@ -69,7 +74,7 @@ function processSheet(sheet, msgDate) {
               "America/Vancouver").utc()
             break
         }
-        if (workStart.isValid()) {
+        if (typeof(workStart) == "object" && workStart.isValid()) {
           Logger.log("workStart is Valid: " + workStart.format())
         }
         else {
@@ -78,6 +83,7 @@ function processSheet(sheet, msgDate) {
         }
 
         workEnd = dates[iCol].format("YYYY-MM-DD ") + end
+        Logger.log("Raw workEnd: [" + workEnd + "]")
         switch (end.length) {
           case 3: case 4:
             workEnd = moment.tz(workEnd, "YYYY-MM-DD hhA",
@@ -90,7 +96,7 @@ function processSheet(sheet, msgDate) {
             break
 
         }
-        if (workEnd.isValid()) {
+        if (typeof(workEnd) == "object" && workEnd.isValid()) {
           Logger.log("workEnd is Valid: " + workEnd.format())
           if (workEnd.isBefore(workStart)) workEnd = workEnd.add(1, "day")
         }
