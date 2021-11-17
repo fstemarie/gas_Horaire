@@ -7,7 +7,6 @@ const LABEL_UNPROCESSED = "Horaire",
   MATESCALNAME = " Best buy - Collegues",
   REGISTRYNAME = "Horaire - Registry"
 
-// IIFE. Called immediately at the start of the program.
 ! function() {
   moment.tz.setDefault("America/Vancouver");
   prepareFolders()
@@ -45,7 +44,7 @@ function createRegistry() {
   let sheet = spreadsheet.getSheets()[0]
   sheet.setName("TEMPLATE")
   sheet.appendRow(["Employé", "Évenement", "Id", "Date début",
-    "Date fin", "Traité"])
+    "Date fin", "Traité", "Horodate Execution"])
   sheet.getRange("A1:F1").setFontSize(14).setFontWeight("bold")
     .setHorizontalAlignment("center").setBorder(null, null, true,
       null, null, null)
