@@ -7,7 +7,7 @@ function fillCalendars() {
     if (!cal) {
       cal = CalendarApp.createCalendar("gs-" + sheetName)
       if (sheetName == "ste-marie-francois") {
-        cal.setColor(CalendarApp.Color.INDIGO)
+        cal.setColor(CalendarApp.Color.PINK)
       } else {
         cal.setColor(CalendarApp.Color.PURPLE)
       }
@@ -20,7 +20,7 @@ function fillCalendars() {
 
 function fillCalendar(cal, sheet) {
   Logger.log("-- fillCalendar(" + cal.getName() + ", " + sheet.getName() + ")")
-  let regRange, regEvents, event, employee
+  let regRange, regEvents, event, employee, employeeSlug
   let eventName, eventStart, eventEnd, eventId
   regRange = sheet.getDataRange().offset(1, 0)
   regEvents = regRange.getValues()
@@ -38,33 +38,31 @@ function fillCalendar(cal, sheet) {
       continue // Si rangee vide, on la saute
     }
     [employee, eventName, eventId, eventStart, eventEnd,] = row
+    employeeSlug = slugify(employee)
     eventStart = moment(eventStart).toDate()
     eventEnd = moment(eventEnd).toDate()
     Logger.log("Creation evenement: " + eventId)
     event = cal.createEvent(eventName, eventStart,
-      eventEnd, {description: eventId})
-    switch (eventId[0]) {
-      case "w":
-        if (employee == "Ste-Marie, François") {
-          event.addPopupReminder(15)
-          event.addPopupReminder(5)
-          event.setColor(CalendarApp.EventColor.ORANGE)
-        }
-        else {
-          event.setColor(CalendarApp.EventColor.BLUE)
-        }
-        break
+      eventEnd, { description: eventId })
+    if (eventId[0].startsWith("<>")) {
+      if (employeeSlug == "ste-marie-francois") {
+        event.addPopupReminder(15)
+        event.addPopupReminder(5)
+        event.setColor(CalendarApp.EventColor.ORANGE)
+      }
+      else {
+        event.setColor(CalendarApp.EventColor.BLUE)
+      }
+    } else if (eventId[0].startsWith("--")) {
+      if (employeeSlug == "ste-marie-francois") {
+        event.addPopupReminder(15)
+        event.addPopupReminder(5)
+        event.setColor(CalendarApp.EventColor.MAUVE)
+      }
+      else {
+        event.setColor(CalendarApp.EventColor.RED)
+      }
 
-      case "l":
-        if (employee == "Ste-Marie, François") {
-          event.addPopupReminder(15)
-          event.addPopupReminder(5)
-          event.setColor(CalendarApp.EventColor.MAUVE)
-        }
-        else {
-          event.setColor(CalendarApp.EventColor.RED)
-        }
-        break
     }
     row[5] = 1 // Signale comme quoi il a ete traite dans le registre
     row[2] = event.getId()
