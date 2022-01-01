@@ -21,129 +21,111 @@ function processSheet(sheet, msgDate) {
   // de date dans un format utilisable.
   let regEvents = [], dates
   let schedule = sheet.getDataRange().getDisplayValues()
-  // Pour chaque employe (ou dates)...
+  // Pour chaque rangee de la cedule...
   for (let iRow = 0; iRow < schedule.length; iRow++) {
     let employee, row = schedule[iRow]
+    // Si la rangee est vide
     if (row[1].length == 0) {
       Logger.log("Skipped empty row")
       continue
-    }
-    else if (row[0].length == 0) {
+    } else if (row[0].length == 0) {
       // La rangee se trouve a etre les dates de la semaine
       row.shift() // On enleve la cellule vide du debut
       // On garde en memoire les dates transformees en Moment
       dates = fixIncompleteDates(row, msgDate)
-    }
-    else {
+    } else {
       // La rangee se trouve a etre la cedule d'un employe
       employee = row.shift()
       Logger.log("************************************************************")
       Logger.log("Employee: " + employee)
-      // Pour chaque journee de la semaine...
+      // Pour chaque journee de la semaine (ou chaque colonne)...
       for (let iCol = 0; iCol < row.length; iCol++) {
-        let start, end, lunch, workStart, workEnd, wuid, summary,
-          lunchStart, lunchEnd, workDay = row[iCol]
+        let start, end, lunch, workStart, workFinish, summary,
+          lunchStart, lunchEnd, workDay = row[iCol], errored = 0
         // Si la cellule est vide, on saute
         if (workDay.length == 0) continue
         // Si la cellule est mal formattee, on saute
         if (/[a-z]/i.test(workDay[0])) continue
-        // Debarrasse du texte inutile
-        Logger.log("workDay before replacements: " + workDay)
-        workDay = workDay.replace(/\r\n/, " ")
-        workDay = workDay.replace(" PST", "")
-        workDay = workDay.replace(/NO\s*LUNCH/i, "")
-        workDay = workDay.replace(" - ", "|")
-        workDay = workDay.replace(/LUNCH\s*:/i, "|")
-        workDay = workDay.replace(/\s*/g, "")
-        workDay = workDay.replace(/\|$/, "")
-        Logger.log("workDay after replacements: " + workDay)
-        // De cette facon, on se retrouve avec 3 tokens
-        ;[start, end, lunch] = workDay.split("|")
+        workDay = applyReplacements(workDay)
+          // De cette facon, on se retrouve avec 3 tokens
+          ;[start, end, lunch] = workDay.split("|")
 
         //----------------------- Work ---------------------------------
         workStart = dates[iCol].format("YYYY-MM-DD ") + start
-        Logger.log("Raw workStart: [" + workStart + "]")
-        switch (start.length) {
-          case 3: case 4:
-            workStart = moment.tz(workStart, "YYYY-MM-DD hhA",
-              "America/Vancouver").utc()
-            break
-
-          case 6: case 7:
-            workStart = moment.tz(workStart, "YYYY-MM-DD hh:mmA",
-              "America/Vancouver").utc()
-            break
-        }
-        if (typeof(workStart) == "object" && workStart.isValid()) {
-          Logger.log("workStart is Valid: " + workStart.format())
-        }
-        else {
+        Logger.log("Raw workStart: " + workStart)
+        if (moment(workStart, "YYYY-MM-DD hh:mmA").isValid()) {
+          workStart = moment.tz(workStart, "YYYY-MM-DD hh:mmA",
+            "America/Vancouver").utc()
+        } else {
+          errored = 1
           Logger.log("Invalid Date - row=" + iRow +
             "; col=" + iCol + "; emp=" + employee)
         }
 
-        workEnd = dates[iCol].format("YYYY-MM-DD ") + end
-        Logger.log("Raw workEnd: [" + workEnd + "]")
-        switch (end.length) {
-          case 3: case 4:
-            workEnd = moment.tz(workEnd, "YYYY-MM-DD hhA",
-              "America/Vancouver").utc()
-            break
-
-          case 6: case 7:
-            workEnd = moment.tz(workEnd, "YYYY-MM-DD hh:mmA",
-              "America/Vancouver").utc()
-            break
-
-        }
-        if (typeof(workEnd) == "object" && workEnd.isValid()) {
-          Logger.log("workEnd is Valid: " + workEnd.format())
-          if (workEnd.isBefore(workStart)) workEnd = workEnd.add(1, "day")
-        }
-        else {
+        workFinish = dates[iCol].format("YYYY-MM-DD ") + end
+        Logger.log("Raw workEnd: [" + workFinish + "]")
+        if (moment(workFinish, "YYYY-MM-DD hh:mmA").isValid()) {
+          workFinish = moment.tz(workFinish, "YYYY-MM-DD hh:mmA",
+            "America/Vancouver").utc()
+          if (workFinish.isBefore(workStart)) {
+            workFinish = workFinish.add(1, "day")
+          }
+        } else {
+          errored = 1
           Logger.log("Invalid Date - row=" + iRow +
             "; col=" + iCol + "; emp=" + employee)
         }
 
-        // wuid = "w/" + workStart.format("X") + "/" + slugify(employee)
         summary = "<> " + employee
-        regEvents.push([employee, summary, , workStart.format(),
-          workEnd.format(), 0])
+        if (errored == 0) {
+          regEvents.push([employee, summary, workStart.format(),
+            workFinish.format(), 0, workDay])
+        } else {
+          regEvents.push([employee, summary,,, 1, workDay])
+        }
 
         //---------------------- Lunch ---------------------------------
+        errored = 0
         if (typeof lunch != "undefined") {
           lunchStart = dates[iCol].format("YYYY-MM-DD ") + lunch
-          Logger.log("lunch: " + lunchStart)
-          switch (lunch.length) {
-            case 3: case 4:
-              lunchStart = moment.tz(lunchStart, "YYYY-MM-DD hhA",
-                "America/Vancouver").utc()
-              break
-
-            case 6: case 7:
-              lunchStart = moment.tz(lunchStart, "YYYY-MM-DD hh:mmA",
-                "America/Vancouver").utc()
-              break
-            }
-          if (lunchStart.isValid()) {
-            Logger.log("lunchStart is Valid: " + lunchStart.format())
+          Logger.log("Raw lunch: " + lunchStart)
+          if (moment(lunchStart, "YYYY-MM-DD hh:mmA").isValid()) {
+            lunchStart = moment.tz(lunchStart, "YYYY-MM-DD hh:mmA",
+              "America/Vancouver").utc()
             if (lunchStart.isBefore(workStart)) lunchStart.add(1, "day")
             lunchEnd = lunchStart.clone().add(30, "minutes")
-
-            // let luid = "l/" + lunchStart.format("X") + "/" + slugify(employee)
-            let summary = "-- " + employee
-            regEvents.push([employee, summary, , lunchStart.format(),
-              lunchEnd.format(), 0])
-          }
-          else {
+          } else {
+            errored = 1
             Logger.log("Invalid Date - row=" + iRow +
               "; col=" + iCol + "; emp=" + employee)
           }
+
+          summary = "-- " + employee
+          if (errored == 0) {
+            regEvents.push([employee, summary, lunchStart.format(),
+              lunchEnd.format(), 0, workDay])
+            } else {
+            regEvents.push([employee, summary,,, 1, workDay])
+          }
+
         }
       }
     }
   }
   return regEvents
+}
+
+function applyReplacements(workDay) {
+  Logger.log("workDay before replacements: " + workDay)
+  workDay = workDay.replace(/\r\n/, " ")
+  workDay = workDay.replace(" PST", "")
+  workDay = workDay.replace(/NO\s*LUNCH/i, "")
+  workDay = workDay.replace(" - ", "|")
+  workDay = workDay.replace(/LUNCH\s*:/i, "|")
+  workDay = workDay.replace(/\s*/g, "")
+  workDay = workDay.replace(/\|$/, "")
+  Logger.log("workDay after replacements: " + workDay)
+  return workDay
 }
 
 // Create an object where each property is an employee (slug) which contains
@@ -168,17 +150,17 @@ function addEventsToRegistry(regEvents) {
     if (!sheet) {
       let template = registry.getSheetByName("TEMPLATE")
       sheet = registry.insertSheet(employeeSlug,
-        Option={"template": template})
+        Option = { "template": template })
     }
-    const events = regEventsByEmp[employeeSlug]
-    const range = sheet.getRange(sheet.getLastRow() + 1, 1, events.length, 6)
-    range.setValues(events)
+    const regEvents = regEventsByEmp[employeeSlug]
+    const range = sheet.getRange(sheet.getLastRow() + 1, 1, regEvents.length, 6)
+    range.setValues(regEvents)
     sheet.sort(4).autoResizeColumns(1, 5)
   }
 }
 
 function fixIncompleteDates(incompleteDates, msgDate) {
-  Logger.log("-- fixDates()")
+  Logger.log("-- fixIncompleteDates()")
   dates = incompleteDates.map((d) => {
     d = moment(d, "ddd, MMM D").year(msgDate.year())
     if (d < msgDate) {
