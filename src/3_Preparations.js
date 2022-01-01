@@ -5,7 +5,7 @@ const LABEL_UNPROCESSED = "Horaire",
   FOLDER_ROOT = "Horaire"
   MYCALNAME = "Best buy - Francois",
   MATESCALNAME = " Best buy - Collegues",
-  REGISTRYNAME = "Horaire - Registry"
+  REGISTRYNAME = "Horaire - Registre"
 
 ! function() {
   moment.tz.setDefault("America/Vancouver");
@@ -42,10 +42,19 @@ function createRegistry() {
   let spreadsheet = SpreadsheetApp.create(REGISTRYNAME)
   DriveApp.getFileById(spreadsheet.getId()).moveTo(rootFolder)
   let sheet = spreadsheet.getSheets()[0]
-  sheet.setName("TEMPLATE")
-  sheet.appendRow(["Employé", "Évenement", "Id", "Date début",
-    "Date fin", "Traité", "Horodate Execution"])
-  sheet.getRange("A1:F1").setFontSize(14).setFontWeight("bold")
+  sheet.setName("Registre")
+  sheet.appendRow([
+    "Employé",
+    "Sommaire",
+    "Début",
+    "Fin",
+    "Erreur",
+    "Original",
+    "Traité",
+    "Id",
+    "Horodate Execution"
+  ])
+  sheet.getRange("A1:I1").setFontSize(14).setFontWeight("bold")
     .setHorizontalAlignment("center").setBorder(null, null, true,
       null, null, null)
   sheet.setFrozenRows(1)
