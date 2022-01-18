@@ -39,7 +39,7 @@ function processSpreadsheet(ss) {
     if (!dates) continue
     // La rangee se trouve a etre la cedule d'un employe
     let employee = row.shift()
-    Logger.log("Employee: " + employee + " ***********************************")
+    Logger.log(`Employee: ${employee} ****************************************`)
     regEvents = regEvents.concat(transformWeekSchedule(employee, row, dates))
     if (regEvents.length > 0) {
       registry.getRange(2, 1, regEvents.length, 9).setValues(regEvents)
