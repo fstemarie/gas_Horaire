@@ -16,7 +16,8 @@
     "url": "https://github.com/fstemarie/gas_Horaire/issues"
   },
   "homepage": "https://github.com/fstemarie/gas_Horaire#readme",
-  "devDependencies": {
-    "@types/google-apps-script": "^1.0.20"
+  "dependencies": {
+    "@types/google-apps-script": "^1.0.44",
+    "clasp": "^1.0.0"
   }
 }

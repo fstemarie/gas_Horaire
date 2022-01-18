@@ -1,6 +1,6 @@
-function prepareSheets() {
-  Logger.log("-- prepareSheets()")
-  let threads, messages = [], results = []
+function extractNewSchedules() {
+  Logger.log("-- prepareSpreadsheets()")
+  let threads, messages = []
   // Process Threads
   // Gets all threads that haven't been processed already
   Logger.log("Process Threads")
@@ -19,33 +19,31 @@ function prepareSheets() {
   Logger.log("Process Messages")
   for (const message of messages) {
     Logger.log("Message : " + message.getSubject())
-    results = results.concat(processMessage(message))
+    processMessage(message)
   }
-  return results
 }
 
 function processMessage(message) {
   Logger.log("-- processMessage()")
-  let results = []
+  // Pour chaque fichier attache au message...
   for (let attachment of message.getAttachments()) {
-    let result = {}
+    let msgDate, fileId, ss
     if (attachment.getName().slice(-5) === ".xlsx") {
-      result["msgDate"] = moment(message.getDate()).format()
-      result["msgId"] = message.getId()
-      result["threadId"] = message.getThread().getId()
-      result["fileId"] = processAttachment(attachment)
-      results.push(result)
+      msgDate = moment(message.getDate())
+      fileId = processAttachment(attachment)
+      ss = SpreadsheetApp.openById(fileId)
+      ss.addDeveloperMetadata("gas_Horaire.msgDate", msgDate.format())
     }
   }
   message.getThread().addLabel(GmailApp.getUserLabelByName(LABEL_PROCESSED))
-  return results
 }
 
 function processAttachment(attachment) {
   Logger.log("-- processAttachment()")
   let resources = {
     title: attachment.getName().replace(/.xlsx?/, ""),
-    parents: [{ id: unprocFolder.getId() }]
+    parents: [{ id: newFolder.getId() }],
+    mimeType: "application/vnd.google-apps.spreadsheet"
   }
   // Creates new Google Sheet from transforming original excel file
   let fileId = Drive.Files.insert(resources, attachment.copyBlob(),
