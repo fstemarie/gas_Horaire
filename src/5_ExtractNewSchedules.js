@@ -1,51 +1,44 @@
 function extractNewSchedules() {
-  Logger.log("-- prepareSpreadsheets()")
-  let threads, messages = []
+  // Logger.log("-- extractNewSchedules()")
   // Process Threads
   // Gets all threads that haven't been processed already
-  Logger.log("Process Threads")
-  threads = GmailApp.getUserLabelByName(LABEL_UNPROCESSED).getThreads()
-  threads = threads.filter((th) => {
-  	let labels = th.getLabels().map((lbl) => lbl.getName())
-  	for (const lbl of labels) {
-  		if (lbl == LABEL_PROCESSED) return false
-  	}
-  	return true
-  })
+  Logger.log("Looking for new messages")
+  let messages = [], threads = GmailApp.search(GMAIL_QUERY)
   for (const thread of threads) {
     messages = messages.concat(thread.getMessages())
   }
   // Process Messages
-  Logger.log("Process Messages")
+  if (messages.length == 0) Logger.log("No new messages")
   for (const message of messages) {
-    Logger.log("Message : " + message.getSubject())
     processMessage(message)
   }
 }
 
 function processMessage(message) {
-  Logger.log("-- processMessage()")
+  // Logger.log("-- processMessage()")
   // Pour chaque fichier attache au message...
+  const subject = message.getSubject()
+  const strMsgDate = moment(message.getDate()).format()
+  Logger.log(`Processing new message : ${subject} | ${strMsgDate}`)
   for (let attachment of message.getAttachments()) {
-    let msgDate, fileId, ss
     if (attachment.getName().slice(-5) === ".xlsx") {
-      msgDate = moment(message.getDate())
-      fileId = processAttachment(attachment)
-      ss = SpreadsheetApp.openById(fileId)
-      ss.addDeveloperMetadata("gas_Horaire.msgDate", msgDate.format())
+      const fileId = processAttachment(attachment)
+      const ss = SpreadsheetApp.openById(fileId)
+      ss.addDeveloperMetadata("gas_Horaire.msgDate", strMsgDate)
     }
   }
   message.getThread().addLabel(GmailApp.getUserLabelByName(LABEL_PROCESSED))
 }
 
 function processAttachment(attachment) {
-  Logger.log("-- processAttachment()")
+  // Logger.log("-- processAttachment()")
   let resources = {
     title: attachment.getName().replace(/.xlsx?/, ""),
     parents: [{ id: newFolder.getId() }],
-    mimeType: "application/vnd.google-apps.spreadsheet"
+    mimeType: MimeType.GOOGLE_SHEETS
   }
   // Creates new Google Sheet from transforming original excel file
+  Logger.log(`Extracting Attachment: ${attachment.getName()}`)
   let fileId = Drive.Files.insert(resources, attachment.copyBlob(),
     { convert: true }).id
   return fileId

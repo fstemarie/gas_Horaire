@@ -1,5 +1,5 @@
 function fillCalendar() {
-  Logger.log("-- fillCalendars()")
+  // Logger.log("-- fillCalendars()")
   // row[0] = employee, row[1] = summary, row[2] = start, row[3] = end
   // row[4] = errored, row[5] = workDay, row[6] = processed, row[7] = Id
   // row[8] = timestamp
@@ -27,25 +27,18 @@ function fillCalendar() {
         Utilities.sleep(500)
       }
     }
+    registry.autoResizeColumns(1, 9)
     file.moveTo(procFolder)
   }
 }
 
 function createCalEvent(row) {
-  Logger.log("-- createCalEvent()")
-
+  // Logger.log("-- createCalEvent()")
   let cal, calEvent
-  let [employee, summary, start, end,,, id] = row
-  employee = slugify(employee)
+  let [employee, summary, start, end, , , id] = row
   start = moment(start)
   end = moment(end)
-  if (employee == "ste-marie-francois") {
-    cal = getCalendar("gs-" + employee)
-    cal.setColor(CalendarApp.Color.ORANGE)
-  } else {
-    cal = getCalendar("gs-collegues")
-    cal.setColor(CalendarApp.Color.BLUE)
-  }
+  cal = getCalendar(employee)
   Logger.log(`>> ${summary} | ${start.format()} | ${end.format()}`)
   calEvent = cal.createEvent(summary,
     start.toDate(), end.toDate(), { description: id })
@@ -66,13 +59,27 @@ function createCalEvent(row) {
   return calEvent
 }
 
-function getCalendar(calName) {
-  Logger.log("-- getCalendar()")
-  let cal = CalendarApp.getCalendarsByName(calName)[0]
+function getCalendar(employee) {
+  // Logger.log("-- getCalendar()")
+  let cal, calName, color
+
+  if (employee == "ste-marie-francois") {
+    calName = "gs-" + employee
+    color = CalendarApp.Color.ORANGE
+
+  } else {
+    calName = "gs-collegues"
+    color = CalendarApp.Color.BLUE
+  }
+
+  cal = CalendarApp.getCalendarsByName(calName)[0]
   if (!cal) {
     cal = CalendarApp.createCalendar(calName)
+    cal.setColor(color)
     Logger.log("Calendar creation. Pause 1s...")
     Utilities.sleep(1000)
   }
+
+
   return cal
 }

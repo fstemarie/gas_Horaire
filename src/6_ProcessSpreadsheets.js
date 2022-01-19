@@ -1,6 +1,5 @@
 function processSpreadsheets() {
-  Logger.log("-- processSpreadsheets()")
-
+  // Logger.log("-- processSpreadsheets()")
   const spreadsheets = newFolder.getFilesByType(MimeType.GOOGLE_SHEETS)
   while (spreadsheets.hasNext()) {
     const file = spreadsheets.next()
@@ -11,18 +10,15 @@ function processSpreadsheets() {
 }
 
 function processSpreadsheet(ss) {
-  Logger.log("-- processSpreadsheet()")
+  // Logger.log("-- processSpreadsheet()")
   const sheet = ss.getSheets()[0]
   const schedule = sheet.getDataRange().getDisplayValues()
   const msgDate = moment(ss.createDeveloperMetadataFinder()
     .withKey("gas_Horaire.msgDate").find()[0].getValue())
-  let regEvents = [], dates
+  let dates, regEvents = [], registry = ss.getSheetByName(REGISTRYNAME)
 
-  Logger.log("msgDate: " + msgDate.format())
-  let registry = ss.getSheetByName(REGISTRYNAME)
   if (registry != null) ss.deleteSheet(registry)
   registry = createRegistry(ss);
-
   // Pour chaque rangee/employe/date de la cedule...
   // Chaque rangee est soit la cedule d'un employe ou les dates de la semaine
   for (let iRow = 0; iRow < schedule.length; iRow++) {
@@ -38,7 +34,7 @@ function processSpreadsheet(ss) {
     }
     if (!dates) continue
     // La rangee se trouve a etre la cedule d'un employe
-    let employee = row.shift()
+    let employee = slugify(row.shift())
     Logger.log(`Employee: ${employee} ****************************************`)
     regEvents = regEvents.concat(transformWeekSchedule(employee, row, dates))
     if (regEvents.length > 0) {
@@ -49,7 +45,7 @@ function processSpreadsheet(ss) {
 }
 
 function transformWeekSchedule(employee, row, dates) {
-  Logger.log("-- transformWeekSchedule()")
+  // Logger.log("-- transformWeekSchedule()")
   let regEvents = []
   // Pour chaque journee de la semaine/colonne...
   for (let iCol = 0; iCol < row.length; iCol++) {
@@ -99,8 +95,6 @@ function transformWeekSchedule(employee, row, dates) {
         lunchEnd = lunchStart.clone().add(30, "minutes")
       } else {
         errored = 1
-        Logger.log("Invalid Date - row=" + iRow +
-          "; col=" + iCol + "; emp=" + employee)
       }
 
       summary = "-- " + employee
@@ -117,8 +111,7 @@ function transformWeekSchedule(employee, row, dates) {
 }
 
 function fixIncompleteDates(incompleteDates, msgDate) {
-  Logger.log("-- fixIncompleteDates()")
-
+  // Logger.log("-- fixIncompleteDates()")
   const dates = incompleteDates.map((d) => {
     let year = msgDate.year()
     let [, month, day] = d.split(" ")
@@ -135,32 +128,21 @@ function fixIncompleteDates(incompleteDates, msgDate) {
 }
 
 function applyReplacements(workDay) {
-  Logger.log("-- applyReplacements()")
-  Logger.log("workDay before replacements: " + workDay)
-  workDay = workDay.replace(/\r\n/, " ")
-  workDay = workDay.replace(" PST", "")
-  workDay = workDay.replace(/NO\s*LUNCH/i, "")
-  workDay = workDay.replace(" - ", "|")
-  workDay = workDay.replace(/LUNCH\s*:/i, "|")
-  workDay = workDay.replace(/\s*/g, "")
-  workDay = workDay.replace(/\|$/, "")
-  Logger.log("workDay after replacements: " + workDay)
-  return workDay
+  // Logger.log("-- applyReplacements()")
+  let newWorkDay = workDay.replace(/\r\n/, " ")
+    .replace(" PST", "").replace(/NO\s*LUNCH/i, "").replace(" - ", "|")
+    .replace(/LUNCH\s*:/i, "|").replace(/\s*/g, "").replace(/\|$/, "")
+  Logger.log(`workDay before/after replacements: ${workDay} -> ${newWorkDay}`)
+  return newWorkDay
 }
 
 function createRegistry(ss) {
-  Logger.log("-- createRegistry()")
+  // Logger.log("-- createRegistry()")
+  Logger.log("Creating new registry")
   let sheet = ss.insertSheet(REGISTRYNAME)
   sheet.appendRow([
-    "Employé",
-    "Sommaire",
-    "Début",
-    "Fin",
-    "Erreur",
-    "Original",
-    "Traité",
-    "Id",
-    "Horodate Execution"
+    "Employé", "Sommaire", "Début", "Fin", "Erreur",
+    "Original", "Traité", "Id", "Horodate Execution"
   ])
   sheet.getRange("A1:I1").setFontSize(14).setFontWeight("bold")
     .setHorizontalAlignment("center").setBorder(null, null, true,

@@ -1,8 +1,9 @@
 const REGISTRYNAME = "Registre"
 
 // Name Gmail label names
-const LABEL_UNPROCESSED = "Horaire"
+const LABEL_SCHEDULE = "Horaire"
 const LABEL_PROCESSED = "Processed"
+const GMAIL_QUERY = `label:${LABEL_SCHEDULE} AND NOT label:${LABEL_PROCESSED}`
 
 // Names of Google Drive folders
 const FOLDER_ROOT = "Horaire"
@@ -20,18 +21,20 @@ const CAL_MATES = "gs-collegues"
 }()
 
 function prepareFolders() {
-  Logger.log("-- prepareFolders()")
+  // Logger.log("-- prepareFolders()")
   let folders = DriveApp.getFoldersByName(FOLDER_ROOT)
   if (folders.hasNext()) {
     globalThis.rootFolder = folders.next()
   } else {
-    globalThis.rootFolder = DriveApp.createFolder(FOLDER_ROOT)
+  Logger.log("Creating root folder")
+  globalThis.rootFolder = DriveApp.createFolder(FOLDER_ROOT)
   }
 
   folders = rootFolder.getFoldersByName(FOLDER_NEW)
   if (folders.hasNext()) {
     globalThis.newFolder = folders.next()
   } else {
+    Logger.log(`Creating \'${FOLDER_NEW}\' folder`)
     globalThis.newFolder = rootFolder.createFolder(FOLDER_NEW)
   }
 
@@ -39,6 +42,7 @@ function prepareFolders() {
   if (folders.hasNext()) {
     globalThis.unprocFolder = folders.next()
   } else {
+    Logger.log(`Creating \'${FOLDER_PREPARED}\' folder`)
     globalThis.unprocFolder = rootFolder.createFolder(FOLDER_PREPARED)
   }
 
@@ -46,42 +50,7 @@ function prepareFolders() {
   if (folders.hasNext()) {
     globalThis.procFolder = folders.next()
   } else {
+    Logger.log(`Creating \'${FOLDER_PROCESSED}\' folder`)
     globalThis.procFolder = rootFolder.createFolder(FOLDER_PROCESSED)
   }
 }
-
-// function createRegistry() {
-//   Logger.log("-- createRegistry()")
-//   let spreadsheet = SpreadsheetApp.create(REGISTRYNAME)
-//   DriveApp.getFileById(spreadsheet.getId()).moveTo(rootFolder)
-//   let sheet = spreadsheet.getSheets()[0]
-//   sheet.setName("Registre")
-//   sheet.appendRow([
-//     "Employé",
-//     "Sommaire",
-//     "Début",
-//     "Fin",
-//     "Erreur",
-//     "Original",
-//     "Traité",
-//     "Id",
-//     "Horodate Execution"
-//   ])
-//   sheet.getRange("A1:I1").setFontSize(14).setFontWeight("bold")
-//     .setHorizontalAlignment("center").setBorder(null, null, true,
-//       null, null, null)
-//   sheet.setFrozenRows(1)
-//   return spreadsheet
-// }
-
-// function prepareRegistry() {
-//   Logger.log("-- prepareRegistry()")
-//   let files = rootFolder.getFilesByName(REGISTRYNAME)
-//   let registry
-//   if (files.hasNext()){
-//     registry = SpreadsheetApp.open(files.next())
-//   } else {
-//     registry = createRegistry()
-//   }
-//   globalThis.registry = registry
-// }
