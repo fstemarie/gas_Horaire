@@ -47,7 +47,7 @@ function createCalEvent(row) {
   } else {
     calEvent.setColor(CalendarApp.EventColor.BLUE)
   }
-  if (employee == "ste-marie-francois") {
+  if (employee == "Ste-Marie, François") {
     calEvent.addPopupReminder(15)
     calEvent.addPopupReminder(5)
     if (summary.startsWith("<>")) {
