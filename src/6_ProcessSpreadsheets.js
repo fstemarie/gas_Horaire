@@ -34,7 +34,7 @@ function processSpreadsheet(ss) {
     }
     if (!dates) continue
     // La rangee se trouve a etre la cedule d'un employe
-    let employee = slugify(row.shift())
+    let employee = row.shift()
     Logger.log(`Employee: ${employee} ****************************************`)
     regEvents = regEvents.concat(transformWeekSchedule(employee, row, dates))
     if (regEvents.length > 0) {

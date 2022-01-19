@@ -62,16 +62,13 @@ function createCalEvent(row) {
 function getCalendar(employee) {
   // Logger.log("-- getCalendar()")
   let cal, calName, color
-
-  if (employee == "ste-marie-francois") {
-    calName = "gs-" + employee
+  if (employee == "Ste-Marie, François") {
+    calName = "gs-ste-marie-francois"
     color = CalendarApp.Color.ORANGE
-
   } else {
     calName = "gs-collegues"
     color = CalendarApp.Color.BLUE
   }
-
   cal = CalendarApp.getCalendarsByName(calName)[0]
   if (!cal) {
     cal = CalendarApp.createCalendar(calName)
@@ -79,7 +76,5 @@ function getCalendar(employee) {
     Logger.log("Calendar creation. Pause 1s...")
     Utilities.sleep(1000)
   }
-
-
   return cal
 }
