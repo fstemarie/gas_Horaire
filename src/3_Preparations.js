@@ -11,10 +11,6 @@ const FOLDER_NEW = "1- New"
 const FOLDER_PREPARED = "2- Prepared"
 const FOLDER_PROCESSED = "3- Processed"
 
-// Names of Google Calendars
-const CAL_ME = "gs-francois"
-const CAL_MATES = "gs-collegues"
-
 ! function() {
   moment.tz.setDefault("America/Vancouver");
   prepareFolders()
