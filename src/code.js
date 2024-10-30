@@ -1,12 +1,33 @@
-function updateCalendars_tt() {
+function findNewSchedules_tt() {
   globalThis.startTs = moment()
   Logger.clear()
-  // Logger.log("-- updateCalendars_tt()")
-  extractNewSchedules()
-  processSpreadsheets()
   try {
-    fillCalendar()
-  } catch (e) {
+    findNewSchedules()
+  } catch(e) {
+    Logger.log(e)
+  }
+  globalThis.endTs = moment()
+  Logger.log("Execution Time: " + endTs.diff(startTs, "seconds") + "sec")
+}
+
+function processSpreadsheets_tt() {
+  globalThis.startTs = moment()
+  Logger.clear()
+  try {
+    processSpreadsheets()
+  } catch(e) {
+    Logger.log(e)
+  }
+  globalThis.endTs = moment()
+  Logger.log("Execution Time: " + endTs.diff(startTs, "seconds") + "sec")
+}
+
+function fillCalendars_tt() {
+  globalThis.startTs = moment()
+  Logger.clear()
+  try {
+  fillCalendars()
+  } catch(e) {
     Logger.log(e)
   }
   globalThis.endTs = moment()
