@@ -1,20 +1,19 @@
 function processSpreadsheets() {
-  // Logger.log("-- processSpreadsheets()")
   const spreadsheets = newFolder.getFilesByType(MimeType.GOOGLE_SHEETS)
   while (spreadsheets.hasNext()) {
     const file = spreadsheets.next()
     const ss = SpreadsheetApp.open(file)
     processSpreadsheet(ss)
     file.moveTo(unprocFolder)
+    if (moment().diff(startTs, "seconds") >= 290) {
+      throw "End of allotted time reached. Exiting..."
+    }
   }
 }
 
 function processSpreadsheet(ss) {
-  // Logger.log("-- processSpreadsheet()")
   const sheet = ss.getSheets()[0]
   const schedule = sheet.getDataRange().getDisplayValues()
-  // const msgDate = moment(ss.createDeveloperMetadataFinder()
-  //   .withKey("gas_Horaire.msgDate").find()[0].getValue())
   let fromDate, dates, regEvents = [], registry = ss.getSheetByName(REGISTRYNAME)
 
   fromDate = ss.getName().split(' ')[1]
@@ -34,9 +33,6 @@ function processSpreadsheet(ss) {
         dates.push(moment(fromDate).format('YYYY-MM-DD'))
       }
       fromDate.add(1, 'd')
-      // row.shift() // On enleve la cellule vide du debut
-      // On garde en memoire les dates transformees en Moment
-      // dates = fixIncompleteDates(row, msgDate)
       continue
     }
     if (!dates) continue
@@ -52,7 +48,6 @@ function processSpreadsheet(ss) {
 }
 
 function transformWeekSchedule(employee, row, dates) {
-  // Logger.log("-- transformWeekSchedule()")
   let regEvents = []
   // Pour chaque journee de la semaine/colonne...
   for (let iCol = 0; iCol < row.length; iCol++) {
@@ -75,8 +70,7 @@ function transformWeekSchedule(employee, row, dates) {
 
     workFinish = dates[iCol] + " " + end
     if (moment(workFinish, "YYYY-MM-DD hh:mmA").isValid()) {
-      workFinish = moment.tz(workFinish, "YYYY-MM-DD hh:mmA",
-        "America/Vancouver").utc()
+      workFinish = moment.tz(workFinish, "YYYY-MM-DD hh:mmA", "America/Vancouver").utc()
       if (workFinish.isBefore(workStart)) {
         workFinish = workFinish.add(1, "day")
       }
@@ -96,9 +90,10 @@ function transformWeekSchedule(employee, row, dates) {
     if (typeof lunch != "undefined") {
       lunchStart = dates[iCol] + " " + lunch
       if (moment(lunchStart, "YYYY-MM-DD hh:mmA").isValid()) {
-        lunchStart = moment.tz(lunchStart, "YYYY-MM-DD hh:mmA",
-          "America/Vancouver").utc()
+        lunchStart = moment.tz(lunchStart, "YYYY-MM-DD hh:mmA", "America/Vancouver").utc()
         if (lunchStart.isBefore(workStart)) lunchStart.add(1, "day")
+        if (lunchStart.isAfter(workFinish)) lunchStart.subtract(1, "day")
+        if (!lunchStart.isBetween(workStart, workFinish)) errored = 1
         lunchEnd = lunchStart.clone().add(30, "minutes")
       } else {
         errored = 1
@@ -117,26 +112,7 @@ function transformWeekSchedule(employee, row, dates) {
   return regEvents
 }
 
-// function fixIncompleteDates(incompleteDates, msgDate) {
-//   // Logger.log("-- fixIncompleteDates()")
-//   const dates = incompleteDates.map((d) => {
-//     let year = msgDate.year()
-//     let [, month, day] = d.split(" ")
-//     month = ['Jan', 'Feb', 'March', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
-//       'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1
-//     day = parseInt(day)
-//     let newDate = [year, month, day]
-//     if (moment(newDate) < msgDate) {
-//       newDate = [year + 1, month, day]
-//     }
-//     newDate = moment(newDate)
-//     return newDate.format('YYYY-MM-DD')
-//   })
-//   return dates
-// }
-
 function applyReplacements(workDay) {
-  // Logger.log("-- applyReplacements()")
   let newWorkDay = workDay.replace(/\r\n/, " ")
     .replace(" PST", "").replace(/NO\s*LUNCH/i, "").replace(" - ", "|")
     .replace(/LUNCH\s*:/i, "|").replace(/\s*/g, "").replace(/\|$/, "")
@@ -145,7 +121,6 @@ function applyReplacements(workDay) {
 }
 
 function createRegistry(ss) {
-  // Logger.log("-- createRegistry()")
   Logger.log("Creating new registry")
   let sheet = ss.insertSheet(REGISTRYNAME)
   sheet.appendRow([
