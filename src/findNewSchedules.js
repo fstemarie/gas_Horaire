@@ -1,6 +1,4 @@
-function extractNewSchedules() {
-  // Logger.log("-- extractNewSchedules()")
-  // Process Threads
+function findNewSchedules() {
   // Gets all threads that haven't been processed already
   Logger.log("Looking for new messages")
   let messages = [], threads = GmailApp.search(GMAIL_QUERY)
@@ -11,6 +9,9 @@ function extractNewSchedules() {
   if (messages.length == 0) Logger.log("No new messages")
   for (const message of messages) {
     processMessage(message)
+    if (moment().diff(startTs, "seconds") >= 290) {
+      throw "End of allotted time reached. Exiting..."
+    }
   }
 }
 
